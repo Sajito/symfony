@@ -26,6 +26,7 @@ use Symfony\Component\Validator\Exception\LogicException;
 class Email extends Constraint
 {
     public const VALIDATION_MODE_HTML5 = 'html5';
+    public const VALIDATION_MODE_HTML5_FORCE_TLD = 'html5-force-tld';
     public const VALIDATION_MODE_STRICT = 'strict';
     /**
      * @deprecated since Symfony 6.2
@@ -36,6 +37,7 @@ class Email extends Constraint
 
     public const VALIDATION_MODES = [
         self::VALIDATION_MODE_HTML5,
+        self::VALIDATION_MODE_HTML5_FORCE_TLD,
         self::VALIDATION_MODE_STRICT,
         self::VALIDATION_MODE_LOOSE,
     ];
@@ -59,7 +61,9 @@ class Email extends Constraint
         string $mode = null,
         callable $normalizer = null,
         array $groups = null,
-        mixed $payload = null
+        mixed $payload = null,
+        /** @deprecated since Symfony 6.2, it's only needed to allow migrating html5 mode to html5-force-tld mode without immediate BC */
+        bool $allowNoTld = null
     ) {
         if (\is_array($options) && \array_key_exists('mode', $options) && !\in_array($options['mode'], self::VALIDATION_MODES, true)) {
             throw new InvalidArgumentException('The "mode" parameter value is not valid.');
@@ -71,8 +75,26 @@ class Email extends Constraint
         $this->mode = $mode ?? $this->mode;
         $this->normalizer = $normalizer ?? $this->normalizer;
 
+        if (self::VALIDATION_MODE_HTML5 === $mode && !$allowNoTld) {
+            trigger_deprecation(
+                'symfony/validator',
+                '6.2',
+                sprintf('To match browser validation, the "html5" mode will allow domains without tld. Use "%s" to keep disallowing those domains.', self::VALIDATION_MODE_HTML5_FORCE_TLD)
+            );
+
+            $this->mode = self::VALIDATION_MODE_HTML5_FORCE_TLD;
+        }
+
+        if (null !== $allowNoTld) {
+            trigger_deprecation(
+                'symfony/validator',
+                '6.2',
+                sprintf('$allowNoTld flag is only included temporarily, please remove it\'s usages during updates to 7.0.')
+            );
+        }
+
         if (self::VALIDATION_MODE_LOOSE === $this->mode) {
-            trigger_deprecation('symfony/validator', '6.2', 'The "%s" mode is deprecated. The default mode will be changed to "%s" in 7.0.', self::VALIDATION_MODE_LOOSE, self::VALIDATION_MODE_HTML5);
+            trigger_deprecation('symfony/validator', '6.2', 'The "%s" mode is deprecated. The default mode will be changed to "%s" in 7.0.', self::VALIDATION_MODE_LOOSE, self::VALIDATION_MODE_HTML5_FORCE_TLD);
         }
 
         if (self::VALIDATION_MODE_STRICT === $this->mode && !class_exists(StrictEmailValidator::class)) {

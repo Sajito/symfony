@@ -4,6 +4,7 @@ CHANGELOG
 6.2
 ---
 
+ * Rename option `Email::VALIDATION_MODE_HTML5` to `Email::VALIDATION_MODE_HTML5_FORCE_TLD` with migration path, to make `Email::VALIDATION_MODE_HTML5` consistent with browser validation
  * Add method `getCause()` to `ConstraintViolationInterface`
  * Add the `When` constraint and validator
  * Deprecate the "loose" e-mail validation mode, use "html5" instead
